@@ -1,13 +1,16 @@
 package model;
 
-public class BookCopy extends Book {
+public class BookCopy {
+    public static final String COPY_ID_FORMAT = "%s_%s";
+
     private String copyId;
     private boolean isAvailable;
+    private Book book;
 
-    public BookCopy(String title, Author author, String isbn, Category category, String copyId) {
-        super(title, author, isbn, category);
+    public BookCopy(String copyId, Book book) {
         this.copyId = copyId;
-        this.isAvailable = true; // Default to available
+        this.isAvailable = true;
+        this.book = book;
     }
 
     public String getCopyId() {
@@ -24,5 +27,9 @@ public class BookCopy extends Book {
 
     public void setAvailable(boolean available) {
         isAvailable = available;
+    }
+
+    public Book getBook() {
+        return book;
     }
 }

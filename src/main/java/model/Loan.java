@@ -5,14 +5,14 @@ import java.util.Calendar;
 public class Loan {
     private static final int MAX_LOAN_DAYS = 14; // Maximum days for loan
     private final User user;
-    private final Book book;
+    private final BookCopy bookCopy;
     private Calendar loanDate;
     private Calendar returnDate;
     private boolean isReturned;
 
-    public Loan(User user, Book book) {
+    public Loan(User user, BookCopy bookCopy) {
         this.user = user;
-        this.book = book;
+        this.bookCopy = bookCopy;
         this.loanDate = Calendar.getInstance();
         this.returnDate = (Calendar) this.loanDate.clone();
         this.returnDate.add(Calendar.DATE, MAX_LOAN_DAYS);
@@ -23,8 +23,8 @@ public class Loan {
         return user;
     }
 
-    public Book getBook() {
-        return book;
+    public BookCopy getBookCopy() {
+        return bookCopy;
     }
 
     public Calendar getLoanDate() {
