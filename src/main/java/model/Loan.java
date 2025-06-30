@@ -50,4 +50,28 @@ public class Loan {
     public void setReturned(boolean returned) {
         isReturned = returned;
     }
+
+    public boolean isOverdue() {
+        Calendar currentDate = Calendar.getInstance();
+        currentDate.set(Calendar.HOUR_OF_DAY, 0);
+        currentDate.set(Calendar.MINUTE, 0);
+        currentDate.set(Calendar.SECOND, 0);
+        currentDate.set(Calendar.MILLISECOND, 0);
+
+        Calendar normalizedReturnDate = (Calendar) returnDate.clone();
+        normalizedReturnDate.set(Calendar.HOUR_OF_DAY, 0);
+        normalizedReturnDate.set(Calendar.MINUTE, 0);
+        normalizedReturnDate.set(Calendar.SECOND, 0);
+        normalizedReturnDate.set(Calendar.MILLISECOND, 0);
+
+        return currentDate.after(normalizedReturnDate);
+    }
+
+    public int getPenaltyDays() {
+        if (!isOverdue()) {
+            return 0; // No penalty if not overdue
+        }
+        long diffInMillis = Calendar.getInstance().getTimeInMillis() - returnDate.getTimeInMillis();
+        return (int) (diffInMillis / (1000 * 60 * 60 * 24)); // Convert milliseconds to days
+    }
 }

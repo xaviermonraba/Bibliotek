@@ -22,4 +22,8 @@ public class LoanController {
     public void lendBookToUser  (String userId, String bookCopyId) throws Exception {
         loanService.lendBookToUser(userId, bookCopyId);
     }
+
+    public void returnBook(String userId, String bookCopyId) throws Exception {
+        loanService.returnBook(userId, bookCopyId);
+    }
 }

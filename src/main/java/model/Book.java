@@ -59,10 +59,23 @@ public class Book {
     }
 
     public void addBookCopy(BookCopy bookCopy) {
+        bookCopy.setBook(this);
         this.bookCopies.add(bookCopy);
     }
 
     public void removeBookCopy(BookCopy bookCopy) {
         this.bookCopies.remove(bookCopy);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if(!(o instanceof Book book))
+            return false;
+        return this.isbn.equals(book.getIsbn());
+    }
+
+    @Override
+    public int hashCode() {
+        return isbn != null ? isbn.hashCode() : 0;
     }
 }

@@ -1,7 +1,8 @@
 package model;
 
 public class BookCopy {
-    public static final String COPY_ID_FORMAT = "%s_%s";
+    // A regular expression to validate the format of a copy ID. ISBN_NumberofCopy
+    public static final String COPY_ID_FORMAT = "^[A-Za-z0-9]+_[A-Za-z0-9]+$";
 
     private String copyId;
     private boolean isAvailable;
@@ -31,5 +32,9 @@ public class BookCopy {
 
     public Book getBook() {
         return book;
+    }
+
+    public void setBook(Book book) {
+        this.book = book;
     }
 }
