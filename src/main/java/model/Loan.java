@@ -1,38 +1,42 @@
 package model;
 
+import model.primaryKey.LoanId;
+
 import java.util.Calendar;
 
+@jakarta.persistence.Entity
 public class Loan {
     private static final int MAX_LOAN_DAYS = 14; // Maximum days for loan
-    private final User user;
-    private final BookCopy bookCopy;
-    private Calendar loanDate;
+
+    @jakarta.persistence.EmbeddedId
+    private LoanId loanId;
     private Calendar returnDate;
     private boolean isReturned;
 
+    public Loan() {
+    }
+
     public Loan(User user, BookCopy bookCopy) {
-        this.user = user;
-        this.bookCopy = bookCopy;
-        this.loanDate = Calendar.getInstance();
-        this.returnDate = (Calendar) this.loanDate.clone();
+        this.loanId = new LoanId(user, bookCopy, Calendar.getInstance());
+        this.returnDate = (Calendar) this.loanId.getLoanDate().clone();
         this.returnDate.add(Calendar.DATE, MAX_LOAN_DAYS);
         this.isReturned = false;
     }
 
     public User getUser() {
-        return user;
+        return loanId.getUser();
     }
 
     public BookCopy getBookCopy() {
-        return bookCopy;
+        return loanId.getBookCopy();
     }
 
     public Calendar getLoanDate() {
-        return loanDate;
+        return this.loanId.getLoanDate();
     }
 
     public void setLoanDate(Calendar loanDate) {
-        this.loanDate = loanDate;
+        this.loanId.setLoanDate(loanDate);
     }
 
     public Calendar getReturnDate() {
@@ -50,6 +54,10 @@ public class Loan {
     public void setReturned(boolean returned) {
         isReturned = returned;
     }
+
+    public LoanId getLoanId() { return loanId; }
+
+    public void setLoanId(LoanId loanId) { this.loanId = loanId; }
 
     public boolean isOverdue() {
         Calendar currentDate = Calendar.getInstance();
@@ -74,4 +82,5 @@ public class Loan {
         long diffInMillis = Calendar.getInstance().getTimeInMillis() - returnDate.getTimeInMillis();
         return (int) (diffInMillis / (1000 * 60 * 60 * 24)); // Convert milliseconds to days
     }
+
 }

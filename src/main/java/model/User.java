@@ -1,11 +1,19 @@
 package model;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+
+@Entity
 public class User {
     private static final int USER_POINTS = 100; // Default points for a user
+    @Id
     private String username;
     private String password;
     private String email;
     private int points;
+
+    public User() {
+    }
 
     public User(String username, String password, String email) {
         this.username = username;

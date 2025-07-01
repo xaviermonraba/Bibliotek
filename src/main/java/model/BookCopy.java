@@ -1,12 +1,17 @@
 package model;
-
+@jakarta.persistence.Entity
 public class BookCopy {
     // A regular expression to validate the format of a copy ID. ISBN_NumberofCopy
     public static final String COPY_ID_FORMAT = "^[A-Za-z0-9]+_[A-Za-z0-9]+$";
 
+    @jakarta.persistence.Id
     private String copyId;
     private boolean isAvailable;
+    @jakarta.persistence.ManyToOne
     private Book book;
+
+    public BookCopy() {
+    }
 
     public BookCopy(String copyId, Book book) {
         this.copyId = copyId;

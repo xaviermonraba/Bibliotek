@@ -1,21 +1,33 @@
 package model;
 
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+
 import java.util.ArrayList;
 import java.util.List;
 
-
+@jakarta.persistence.Entity
 public class Category {
-    private final int id;
+    @jakarta.persistence.Id
+    @jakarta.persistence.GeneratedValue(strategy = jakarta.persistence.GenerationType.IDENTITY)
+    private long id;
     private String name;
-    private List<Category> subcategories;
+    @ManyToOne
+    private Category parent;
 
-    public Category(int id, String name) {
-        this.id = id;
+    @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL)
+    private List<Category> subcategories = new ArrayList<>();
+
+    public Category() {
+        this.subcategories = new ArrayList<Category>();
+    }
+    public Category(String name) {
         this.name = name;
         this.subcategories = new ArrayList<>();
     }
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 

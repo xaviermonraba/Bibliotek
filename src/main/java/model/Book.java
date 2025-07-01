@@ -1,14 +1,25 @@
 package model;
 
+import jakarta.persistence.OneToMany;
+
 import java.util.ArrayList;
 import java.util.List;
 
+@jakarta.persistence.Entity
 public class Book {
-    private String title;
-    private Author author;
+    @jakarta.persistence.Id
     private String isbn;
+    private String title;
+    @jakarta.persistence.ManyToOne
+    private Author author;
+    @jakarta.persistence.ManyToOne
     private Category category;
+    @OneToMany(mappedBy = "book", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
     private List<BookCopy> bookCopies;
+
+    public Book() {
+        this.bookCopies = new ArrayList<>();
+    }
 
     public Book(String title, Author author, String isbn, Category category) {
         this.title = title;
