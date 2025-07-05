@@ -63,35 +63,46 @@ public class LoanService {
     }
 
     public LoanAnswer returnBook(String userId,String bookCopyId) throws Exception {
-        BookCopy bookCopy = bookService.findBookCopyById(bookCopyId);
-        if (bookCopy == null) {
-            throw new BookNotFoundException(bookCopyId);
-        }
-        EntityManager em = this.getEntityManager();
-        Loan loan = em.createQuery(
-                        "SELECT l FROM Loan l " +
-                                "Inner Join BookCopy bc on bc.copyId = l.loanId.bookCopy.id " +
-                                "WHERE l.loanId.user.id = :userId and l.isReturned = false and bc.id = :bookCopyId",
-                        Loan.class)
-                .setParameter("userId", userId)
-                .setParameter("bookCopyId", bookCopy.getCopyId())
-                .getSingleResult();
-        if (loan.getBookCopy().getCopyId().equals(bookCopyId) && !loan.isReturned()) {
-            em.getTransaction().begin();
-            loan.setReturned(true);
-            em.merge(loan);
-            em.getTransaction().commit();
-            bookService.updateBookCopyAvailable(bookCopy, true);
-            if(loan.isOverdue()) {
-                int penaltyDays = loan.getPenaltyDays();
-                userService.updateUserPenaltyDays(userId, penaltyDays);
-                return new LoanAnswer(userId, bookCopyId, LoanAnswer.LoanAnswerType.LOAN_LATE);
+
+            BookCopy bookCopy = bookService.findBookCopyById(bookCopyId);
+            if (bookCopy == null) {
+                throw new BookNotFoundException(bookCopyId);
             }
-            else {
-                return new LoanAnswer(userId, bookCopyId, LoanAnswer.LoanAnswerType.LOAN_ON_TIME);
+            EntityManager em = this.getEntityManager();
+        try {
+            Loan loan = em.createQuery(
+                            "SELECT l FROM Loan l " +
+                                    "Inner Join BookCopy bc on bc.copyId = l.loanId.bookCopy.id " +
+                                    "WHERE l.loanId.user.id = :userId and l.isReturned = false and bc.id = :bookCopyId",
+                            Loan.class)
+                    .setParameter("userId", userId)
+                    .setParameter("bookCopyId", bookCopy.getCopyId())
+                    .getSingleResult();
+            if (loan.getBookCopy().getCopyId().equals(bookCopyId) && !loan.isReturned()) {
+                em.getTransaction().begin();
+                loan.setReturned(true);
+                em.merge(loan);
+                bookCopy.setAvailable(true);
+                em.merge(bookCopy);
+                em.getTransaction().commit();
+                if (loan.isOverdue()) {
+                    int penaltyDays = loan.getPenaltyDays();
+                    User user = loan.getUser();
+                    user.setPoints(user.getPoints() - penaltyDays);
+                    em.getTransaction().begin();
+                    em.merge(user);
+                    em.getTransaction().commit();
+                    return new LoanAnswer(userId, bookCopyId, LoanAnswer.LoanAnswerType.LOAN_LATE);
+                } else {
+                    return new LoanAnswer(userId, bookCopyId, LoanAnswer.LoanAnswerType.LOAN_ON_TIME);
+                }
+            }
+            throw new LoanNotAvailableException(bookCopyId);
+        }finally {
+            if (em != null && em.isOpen()) {
+                em.close();
             }
         }
-        throw new LoanNotAvailableException(bookCopyId);
     }
 
     private EntityManager getEntityManager() {
