@@ -3,6 +3,9 @@ package service;
 import exceptions.BookNotFoundException;
 import exceptions.LoanNotAvailableException;
 import exceptions.UserNotFoundException;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.Persistence;
 import model.BookCopy;
 import model.Loan;
 import model.User;
@@ -14,23 +17,28 @@ import java.util.Date;
 import java.util.List;
 
 public class LoanService {
-    private final List<Loan> loanList;
+    //private final List<Loan> loanList;
+    private static final EntityManagerFactory emf = Persistence.createEntityManagerFactory("BibliotekPU");
     private final BookService bookService;
     private final UserService userService;
 
     public LoanService(BookService bookService, UserService userService) {
-        this.loanList = new ArrayList<>();
-        this.bookService = bookService;
-        this.userService = userService;
-    }
-    public LoanService(List<Loan> loanList, BookService bookService, UserService userService) {
-        this.loanList = loanList;
         this.bookService = bookService;
         this.userService = userService;
     }
 
     public List<Loan> getLoanList() {
-        return loanList;
+        EntityManager em = this.getEntityManager();
+        try {
+            return em.createQuery("SELECT l FROM Loan l", Loan.class).getResultList();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ArrayList<>();
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
+        }
     }
 
     public void lendBookToUser(String userId, String bookCopyId) throws Exception {
@@ -47,7 +55,11 @@ public class LoanService {
         }
         Loan loan = new Loan(user, bookCopy);
         bookCopy.setAvailable(false);
-        loanList.add(loan);
+        EntityManager em = this.getEntityManager();
+        em.getTransaction().begin();
+        em.persist(loan);
+        em.merge(bookCopy);
+        em.getTransaction().commit();
     }
 
     public LoanAnswer returnBook(String userId,String bookCopyId) throws Exception {
@@ -55,21 +67,34 @@ public class LoanService {
         if (bookCopy == null) {
             throw new BookNotFoundException(bookCopyId);
         }
-        for (Loan loan : loanList) {
-            if (loan.getBookCopy().getCopyId().equals(bookCopyId) && !loan.isReturned()) {
-                loan.setReturned(true);
-                bookCopy.setAvailable(true);
-                if(loan.isOverdue()) {
-                    User user = userService.getUserById(userId);
-                    int penaltyDays = loan.getPenaltyDays();
-                    user.setPoints(user.getPoints() - penaltyDays);
-                    return new LoanAnswer(userId, bookCopyId, LoanAnswer.LoanAnswerType.LOAN_LATE);
-                }
-                else {
-                    return new LoanAnswer(userId, bookCopyId, LoanAnswer.LoanAnswerType.LOAN_ON_TIME);
-                }
+        EntityManager em = this.getEntityManager();
+        Loan loan = em.createQuery(
+                        "SELECT l FROM Loan l " +
+                                "Inner Join BookCopy bc on bc.copyId = l.loanId.bookCopy.id " +
+                                "WHERE l.loanId.user.id = :userId and l.isReturned = false and bc.id = :bookCopyId",
+                        Loan.class)
+                .setParameter("userId", userId)
+                .setParameter("bookCopyId", bookCopy.getCopyId())
+                .getSingleResult();
+        if (loan.getBookCopy().getCopyId().equals(bookCopyId) && !loan.isReturned()) {
+            em.getTransaction().begin();
+            loan.setReturned(true);
+            em.merge(loan);
+            em.getTransaction().commit();
+            bookService.updateBookCopyAvailable(bookCopy, true);
+            if(loan.isOverdue()) {
+                int penaltyDays = loan.getPenaltyDays();
+                userService.updateUserPenaltyDays(userId, penaltyDays);
+                return new LoanAnswer(userId, bookCopyId, LoanAnswer.LoanAnswerType.LOAN_LATE);
+            }
+            else {
+                return new LoanAnswer(userId, bookCopyId, LoanAnswer.LoanAnswerType.LOAN_ON_TIME);
             }
         }
         throw new LoanNotAvailableException(bookCopyId);
+    }
+
+    private EntityManager getEntityManager() {
+        return emf.createEntityManager();
     }
 }

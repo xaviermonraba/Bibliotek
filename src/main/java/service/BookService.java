@@ -1,5 +1,8 @@
 package service;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.Persistence;
 import model.Book;
 import model.BookCopy;
 
@@ -7,10 +10,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class BookService {
-    private final Map<String, Book> bookMap;
+    //private final Map<String, Book> bookMap;
+
+    private static final EntityManagerFactory emf = Persistence.createEntityManagerFactory("BibliotekPU");
 
     public BookService() {
-        this.bookMap = new HashMap<>();
+
     }
 
     public BookCopy findBookCopyById(String bookCopyId) {
@@ -18,7 +23,9 @@ public class BookService {
         if (isbn == null) {
             return null;
         }
-        Book book = bookMap.get(isbn);
+        EntityManager em = this.getEntityManager();
+        Book book = em.find(Book.class, isbn);
+        em.close();
         if (book == null) {
             return null;
         }
@@ -49,10 +56,16 @@ public class BookService {
         if (book == null || book.getIsbn() == null || book.getIsbn().isEmpty()) {
             throw new IllegalArgumentException("Book or ISBN cannot be null or empty");
         }
-        if (bookMap.containsKey(book.getIsbn())) {
+        EntityManager em = this.getEntityManager();
+        Book bookBd = em.find(Book.class, book.getIsbn());
+        if (bookBd != null) {
+            em.close();
             throw new IllegalArgumentException("Book with this ISBN already exists");
         }
-        bookMap.put(book.getIsbn(), book);
+        em.getTransaction().begin();
+        em.persist(book);
+        em.getTransaction().commit();
+        em.close();
     }
 
     public void addBookCopy(BookCopy bookCopy) {
@@ -63,15 +76,42 @@ public class BookService {
         if (isbn == null) {
             throw new IllegalArgumentException("Invalid book copy ID format");
         }
-        Book book = bookMap.get(isbn);
+        EntityManager em = this.getEntityManager();
+        Book book = em.find(Book.class, isbn);
         if (book == null) {
+            em.close();
             throw new IllegalArgumentException("No book found with the given ISBN to add the copy");
         }
         for (BookCopy bookCp : book.getBookCopies()) {
             if (bookCopy.getCopyId().equals(bookCp.getCopyId())) {
+                em.close();
                 throw new IllegalArgumentException("Book copy with this ID already exists for the book");
             }
         }
-        book.addBookCopy(bookCopy);
+        em.getTransaction().begin();
+        em.persist(bookCopy);
+        em.getTransaction().commit();
+        em.close();
+    }
+
+    private EntityManager getEntityManager() {
+        return emf.createEntityManager();
+    }
+
+    public void updateBookCopyAvailable(BookCopy bookCopy, boolean b) {
+        if (bookCopy == null || bookCopy.getCopyId() == null || bookCopy.getCopyId().isEmpty()) {
+            throw new IllegalArgumentException("Book copy or copy ID cannot be null or empty");
+        }
+        EntityManager em = this.getEntityManager();
+        BookCopy existingBookCopy = em.find(BookCopy.class, bookCopy.getCopyId());
+        if (existingBookCopy == null) {
+            em.close();
+            throw new IllegalArgumentException("No book copy found with the given ID to update availability");
+        }
+        existingBookCopy.setAvailable(b);
+        em.getTransaction().begin();
+        em.merge(existingBookCopy);
+        em.getTransaction().commit();
+        em.close();
     }
 }

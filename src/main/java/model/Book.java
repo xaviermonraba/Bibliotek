@@ -1,5 +1,7 @@
 package model;
 
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 
 import java.util.ArrayList;
@@ -10,9 +12,9 @@ public class Book {
     @jakarta.persistence.Id
     private String isbn;
     private String title;
-    @jakarta.persistence.ManyToOne
+    @ManyToOne(cascade = jakarta.persistence.CascadeType.PERSIST)
     private Author author;
-    @jakarta.persistence.ManyToOne
+    @ManyToOne(cascade = jakarta.persistence.CascadeType.PERSIST)
     private Category category;
     @OneToMany(mappedBy = "book", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
     private List<BookCopy> bookCopies;
